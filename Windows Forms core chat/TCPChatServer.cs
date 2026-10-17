@@ -206,6 +206,71 @@ namespace Windows_Forms_Chat
                 currentClientSocket.socket.Send(data);
                 AddToChat("Connected users sent to: " + currentClientSocket.username);
             }
+            if (text.ToLower() == "!about") // Client requested time
+            {
+                byte[] data = Encoding.ASCII.GetBytes("Server: This is a simple chat server MVP that was provided by Torrens University Australia for NDS203 Networking and Databases. It allows multiple clients to connect and chat with each other via TCP/IP. It was co-developed by Andrew Egan in October of 2026");
+                currentClientSocket.socket.Send(data);
+                AddToChat("About information sent to: " + currentClientSocket.username);
+            }
+            if (text.ToLower().StartsWith("!whisper")) // Client requested to whisper to another user
+            {
+                string[] parts = text.Split(' ', 3); // Split the command into parts
+                if (parts.Length < 3)
+                {
+                    byte[] data = Encoding.ASCII.GetBytes("Usage: !whisper <username> <message>");
+                    currentClientSocket.socket.Send(data);
+                    AddToChat("Whisper command usage sent to: " + currentClientSocket.username);
+                }
+                else
+                {
+                    string targetUsername = parts[1]; // The username to whisper to
+                    string message = parts[2]; // The message to send
+                    ClientSocket targetClient = clientSockets.Find(c => c.username.Equals(targetUsername, StringComparison.OrdinalIgnoreCase));
+                    if (targetClient != null)
+                    {
+                        byte[] data = Encoding.ASCII.GetBytes($"Whisper from {currentClientSocket.username}: {message}");
+                        targetClient.socket.Send(data);
+                        data = Encoding.ASCII.GetBytes($"Whisper to {targetUsername}: {message}");
+                        currentClientSocket.socket.Send(data);
+                        AddToChat($"Whisper from {currentClientSocket.username} to {targetUsername}: {message}");
+                    }
+                    else
+                    {
+                        byte[] data = Encoding.ASCII.GetBytes($"User {targetUsername} not found, whisper failed.");
+                        currentClientSocket.socket.Send(data);
+                        AddToChat($"Whisper failed: User {targetUsername} not found for {currentClientSocket.username}");
+                    }
+                }
+            }
+            if (text.StartsWith("!reply")) // Client requested to reply to the last whisper
+            {
+                string[] parts = text.Split(' ', 2); // Split the command into parts
+                if (parts.Length < 2)
+                {
+                    byte[] data = Encoding.ASCII.GetBytes("Usage: !reply <message>");
+                    currentClientSocket.socket.Send(data);
+                    AddToChat("Reply command usage sent to: " + currentClientSocket.username);
+                }
+                else
+                {
+                    string message = parts[1];
+                    ClientSocket lastWhisperedClient = clientSockets.Find(c => c.username.Equals(currentClientSocket.lastWhisperedUsername, StringComparison.OrdinalIgnoreCase));
+                    if (lastWhisperedClient != null)
+                    {
+                        byte[] data = Encoding.ASCII.GetBytes($"Reply from {currentClientSocket.username}: {message}");
+                        lastWhisperedClient.socket.Send(data);
+                        data = Encoding.ASCII.GetBytes($"Reply to {lastWhisperedClient.username}: {message}");
+                        currentClientSocket.socket.Send(data);
+                        AddToChat($"Reply from {currentClientSocket.username} to {lastWhisperedClient.username}: {message}");
+                    }
+                    else
+                    {
+                        byte[] data = Encoding.ASCII.GetBytes($"No user to reply to, reply failed.");
+                        currentClientSocket.socket.Send(data);
+                        AddToChat($"Reply failed: No user to reply to for {currentClientSocket.username}");
+                    }
+                }
+            }
             if (text.ToLower() == "!exit") // Client wants to exit gracefully
             {
                 // Always Shutdown before closing
@@ -222,7 +287,7 @@ namespace Windows_Forms_Chat
                 {
                     AddToChat("User " + oldUsername + " updated username to: " + currentClientSocket.username);
                 }
-                else if (!text.StartsWith("!username") && !text.StartsWith("!user") && !text.StartsWith("!commands") && !text.StartsWith("!who") && !text.StartsWith("!exit"))
+                else if (!text.StartsWith("!username") && !text.StartsWith("!user") && !text.StartsWith("!commands") && !text.StartsWith("!who") && !text.StartsWith("!about") && !text.StartsWith("!whisper") && !text.StartsWith("!reply") && !text.StartsWith("!exit"))
                 {
                     SendToAll(currentClientSocket.username + ": " + text, currentClientSocket);
                 }
