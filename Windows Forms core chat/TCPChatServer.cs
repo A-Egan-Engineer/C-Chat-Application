@@ -146,7 +146,7 @@ namespace Windows_Forms_Chat
             {
                 byte[] data = Encoding.ASCII.GetBytes("Commands are !commands !about !who !whisper !exit");
                 currentClientSocket.socket.Send(data);
-                AddToChat("Commands sent to client");
+                AddToChat("Commands sent to: " + currentClientSocket.username);
             }
             else if (text.ToLower() == "!user") // Client can update username during session - Andrew
             {
@@ -188,8 +188,14 @@ namespace Windows_Forms_Chat
             }
             else
             {
-                //normal message broadcast out to all clients
-                SendToAll(currentClientSocket.username + ": " + text, currentClientSocket);
+                if (text.StartsWith("!username"))
+                {
+                    AddToChat("Client updated username to: " + currentClientSocket.username);
+                }
+                else
+                {
+                    SendToAll(currentClientSocket.username + ": " + text, currentClientSocket);
+                }                
             }
             //we just received a message from this socket, better keep an ear out with another thread for the next one
             currentClientSocket.socket.BeginReceive(currentClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, currentClientSocket);
