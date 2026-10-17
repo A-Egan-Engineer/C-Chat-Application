@@ -7,6 +7,8 @@ using System.Threading;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
+using System.Diagnostics.Eventing.Reader;
+using System.Threading.Tasks;
 
 //https://github.com/AbleOpus/NetworkingSamples/blob/master/MultiServer/Program.cs
 namespace Windows_Forms_Chat
@@ -17,6 +19,8 @@ namespace Windows_Forms_Chat
         public Socket serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         //connected clients
         public List<ClientSocket> clientSockets = new List<ClientSocket>();
+        public bool usernameUsed = false;
+        
         public static TCPChatServer createInstance(int port, TextBox chatTextBox)
         {
             TCPChatServer tcp = null;
@@ -35,12 +39,12 @@ namespace Windows_Forms_Chat
 
         public void SetupServer()
         {
-            chatTextBox.Text += "Setting up server...\n";
+            chatTextBox.Text += "Setting up server...\n\n";
             serverSocket.Bind(new IPEndPoint(IPAddress.Any, port));
             serverSocket.Listen(0);
             //kick off thread to read connecting clients, when one connects, it'll call out AcceptCallback function
             serverSocket.BeginAccept(AcceptCallback, this);
-            chatTextBox.Text += "Server setup complete\n";
+            chatTextBox.Text += "Server setup complete\n\n";
         }
 
 
@@ -75,7 +79,7 @@ namespace Windows_Forms_Chat
             clientSockets.Add(newClientSocket);
             //start a thread to listen out for this new joining socket. Therefore there is a thread open for each client
             joiningSocket.BeginReceive(newClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, newClientSocket);
-            AddToChat("Client connected, waiting for request...");
+            AddToChat("Client connected, waiting for request...\n\n");
 
             //we finished this accept thread, better kick off another so more people can join
             serverSocket.BeginAccept(AcceptCallback, null);
@@ -116,6 +120,7 @@ namespace Windows_Forms_Chat
                         byte[] data = Encoding.ASCII.GetBytes("Username cannot be empty. Please choose a valid username.");
                         currentClientSocket.socket.Send(data);
                         AddToChat("Client attempted to set an empty username");
+                        currentClientSocket.socket.BeginReceive(currentClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, currentClientSocket);
                         return; // Exit the method to prevent further processing
                     }
 
@@ -123,10 +128,20 @@ namespace Windows_Forms_Chat
                     {
                         if (c.username != null && c.username.Equals(newUsername, StringComparison.OrdinalIgnoreCase)) // Compare usernames case-insensitively - Andrew
                         {
-                            byte[] data = Encoding.ASCII.GetBytes("Username already taken. Please choose a different username.");
+                            byte[] data = Encoding.ASCII.GetBytes("Username already taken!");
+                            currentClientSocket.socket.Send(data);
+                            data = Encoding.ASCII.GetBytes("You have been disconnected due to attempting to set a duplicate username.");
+                            currentClientSocket.socket.Send(data);
+                            data = Encoding.ASCII.GetBytes("The connection will close in 10 seconds, please reconnect and try a different username.");
                             currentClientSocket.socket.Send(data);
                             AddToChat($"Client attempted to set duplicate username: {newUsername}");
-                            return; // Exits method to avoid setting username if duplicate - Andrew
+                            usernameUsed = true;
+                            if (usernameUsed == true)
+                            {
+                                DisconnectClient(currentClientSocket); // Disconnect the client if the username is already taken - Andrew
+                                usernameUsed = false;
+                                return;
+                            }
                         }
                     }
                     currentClientSocket.username = newUsername; // Set the username - Andrew
@@ -139,7 +154,8 @@ namespace Windows_Forms_Chat
                     byte[] data = Encoding.ASCII.GetBytes("Please set your username using !username <your_username>");
                     currentClientSocket.socket.Send(data);
                     AddToChat("Client attempted to send message without setting username");
-                    return; // Exits method to deny user sending message without setting username - Andrew
+                    currentClientSocket.socket.BeginReceive(currentClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, currentClientSocket);
+                    return; // Exit the method to prevent further processing
                 }
             }
             if (text.ToLower() == "!commands") // Client requested time
@@ -210,6 +226,16 @@ namespace Windows_Forms_Chat
                     byte[] data = Encoding.ASCII.GetBytes(str);
                     c.socket.Send(data);
                 }
+            }
+        }
+
+        public async Task DisconnectClient(ClientSocket client)
+        {
+            if (client != null)
+            {
+                await Task.Delay(10000);
+                client.socket.Shutdown(SocketShutdown.Both);
+                AddToChat("Client disconnected");
             }
         }
     }
