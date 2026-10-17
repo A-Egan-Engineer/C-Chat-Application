@@ -20,7 +20,8 @@ namespace Windows_Forms_Chat
         //connected clients
         public List<ClientSocket> clientSockets = new List<ClientSocket>();
         public bool usernameUsed = false;
-        
+        public string oldUsername = null;
+
         public static TCPChatServer createInstance(int port, TextBox chatTextBox)
         {
             TCPChatServer tcp = null;
@@ -86,9 +87,11 @@ namespace Windows_Forms_Chat
         }
 
         /* Callback function for handling received data from clients */
-        public void ReceiveCallback(IAsyncResult AR)
+        public async void ReceiveCallback(IAsyncResult AR)
         {
             ClientSocket currentClientSocket = (ClientSocket)AR.AsyncState;
+
+            currentClientSocket.state = true; // Set the state to true to indicate that the client is active - Andrew
 
             int received;
 
@@ -128,17 +131,13 @@ namespace Windows_Forms_Chat
                     {
                         if (c.username != null && c.username.Equals(newUsername, StringComparison.OrdinalIgnoreCase)) // Compare usernames case-insensitively - Andrew
                         {
-                            byte[] data = Encoding.ASCII.GetBytes("Username already taken!");
-                            currentClientSocket.socket.Send(data);
-                            data = Encoding.ASCII.GetBytes("You have been disconnected due to attempting to set a duplicate username.");
-                            currentClientSocket.socket.Send(data);
-                            data = Encoding.ASCII.GetBytes("The connection will close in 10 seconds, please reconnect and try a different username.");
+                            byte[] data = Encoding.ASCII.GetBytes("Username already taken!\n");
                             currentClientSocket.socket.Send(data);
                             AddToChat($"Client attempted to set duplicate username: {newUsername}");
                             usernameUsed = true;
                             if (usernameUsed == true)
                             {
-                                DisconnectClient(currentClientSocket); // Disconnect the client if the username is already taken - Andrew
+                                await DisconnectClient(currentClientSocket); // Disconnect the client if the username is already taken - Andrew
                                 usernameUsed = false;
                                 return;
                             }
@@ -164,11 +163,9 @@ namespace Windows_Forms_Chat
                 currentClientSocket.socket.Send(data);
                 AddToChat("Commands sent to: " + currentClientSocket.username);
             }
-            else if (text.ToLower() == "!user") // Client can update username during session - Andrew
+            if (currentClientSocket.username != null)
             {
-                string oldUsername = currentClientSocket.username;
-
-                if (text.StartsWith("!user"))
+                if (text.StartsWith("!user") && !text.StartsWith("!username"))
                 {
                     string newUsername = text.Substring(6).Trim(); // Extract the new username from the command - Andrew
                     if (string.IsNullOrWhiteSpace(newUsername)) // Check if the new username is empty or whitespace - Andrew
@@ -176,30 +173,35 @@ namespace Windows_Forms_Chat
                         byte[] data = Encoding.ASCII.GetBytes("Username cannot be empty. Please choose a valid username.");
                         currentClientSocket.socket.Send(data);
                         AddToChat("Client attempted to set an empty username");
+                        currentClientSocket.socket.BeginReceive(currentClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, currentClientSocket);
                         return; // Exit the method to prevent further processing
                     }
                     foreach (ClientSocket c in clientSockets) // Check for duplicate usernames - Andrew
                     {
                         if (c.username != null && c.username.Equals(newUsername, StringComparison.OrdinalIgnoreCase)) // Compare usernames case-insensitively - Andrew
                         {
-                            byte[] data = Encoding.ASCII.GetBytes("Username already taken. Please choose a different username.");
+                            byte[] data = Encoding.ASCII.GetBytes("Username already taken!\n");
                             currentClientSocket.socket.Send(data);
                             AddToChat($"Client attempted to set duplicate username: {newUsername}");
-                            return; // Exits method to avoid setting username if duplicate - Andrew
+                            usernameUsed = true;
+                            if (usernameUsed == true)
+                            {
+                                await DisconnectClient(currentClientSocket); // Disconnect the client if the username is already taken - Andrew
+                                usernameUsed = false;
+                                return;
+                            }
                         }
                     }
+                    oldUsername = currentClientSocket.username; // Store the old username for notification purposes - Andrew
                     currentClientSocket.username = newUsername; // Set the new username to currentClientSocket - Andrew
                     byte[] usernameChangedData = Encoding.ASCII.GetBytes($"Username updated to {newUsername}"); // Create a message to notify all clients of the username change - Andrew
                     SendToAll($"User {oldUsername} changed their username to {newUsername}", currentClientSocket); // Push the username change notification to all clients - Andrew
                 }
             }
-            else if (text.ToLower() == "!exit") // Client wants to exit gracefully
+            if (text.ToLower() == "!exit") // Client wants to exit gracefully
             {
                 // Always Shutdown before closing
-                currentClientSocket.socket.Shutdown(SocketShutdown.Both);
-                currentClientSocket.socket.Close();
-                clientSockets.Remove(currentClientSocket);
-                AddToChat("Client disconnected");
+                await DisconnectClient(currentClientSocket);
                 return;
             }
             else
@@ -208,12 +210,15 @@ namespace Windows_Forms_Chat
                 {
                     AddToChat("Client updated username to: " + currentClientSocket.username);
                 }
-                else
+                if (text.StartsWith("!user"))
+                {
+                    AddToChat("User " + oldUsername + " updated username to: " + currentClientSocket.username);
+                }
+                else if (!text.StartsWith("!username") && !text.StartsWith("!user"))
                 {
                     SendToAll(currentClientSocket.username + ": " + text, currentClientSocket);
-                }                
+                }
             }
-            //we just received a message from this socket, better keep an ear out with another thread for the next one
             currentClientSocket.socket.BeginReceive(currentClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, currentClientSocket);
         }
 
@@ -233,8 +238,13 @@ namespace Windows_Forms_Chat
         {
             if (client != null)
             {
-                await Task.Delay(10000);
+                byte[] data = Encoding.ASCII.GetBytes("You have been disconnected. The connection will close in 5 seconds.");
+                client.socket.Send(data);
+                await Task.Delay(5000);
                 client.socket.Shutdown(SocketShutdown.Both);
+                client.socket.Close();
+                clientSockets.Remove(client);
+                client.state = false;
                 AddToChat("Client disconnected");
             }
         }

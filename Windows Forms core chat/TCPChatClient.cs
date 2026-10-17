@@ -14,10 +14,8 @@ namespace Windows_Forms_Chat
         public Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         public ClientSocket clientSocket = new ClientSocket();
 
-
         public int serverPort;
         public string serverIP;
-
 
         public static TCPChatClient CreateInstance(int port, int serverPort, string serverIP, TextBox chatTextBox)
         {
@@ -101,6 +99,13 @@ namespace Windows_Forms_Chat
             //we just received a message from this socket, better keep an ear out with another thread for the next one
             currentClientSocket.socket.BeginReceive(currentClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, currentClientSocket);
         }
+
+        public void Open()
+        {
+            socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            clientSocket.socket = socket;
+        }
+
         public void Close()
         {
             socket.Close();

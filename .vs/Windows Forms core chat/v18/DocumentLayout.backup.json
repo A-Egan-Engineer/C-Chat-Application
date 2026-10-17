@@ -32,7 +32,7 @@
               "RelativeDocumentMoniker": "Windows Forms core chat\\TCPChatServer.cs",
               "ToolTip": "C:\\Users\\aegan\\Documents\\NDS203 - Assesment 2\\C# Chat Application - Current\\C# Chat Application\\Windows Forms core chat\\TCPChatServer.cs",
               "RelativeToolTip": "Windows Forms core chat\\TCPChatServer.cs",
-              "ViewState": "AgIAANEAAAAAAAAAAAAAwOsAAAAoAAAAAAAAAA==",
+              "ViewState": "AgIAAL4AAAAAAAAAAAAswNkAAAARAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-10-17T02:04:16.754Z",
               "IsPinned": true,
@@ -46,7 +46,7 @@
               "RelativeDocumentMoniker": "Windows Forms core chat\\TCPChatClient.cs",
               "ToolTip": "C:\\Users\\aegan\\Documents\\NDS203 - Assesment 2\\C# Chat Application - Current\\C# Chat Application\\Windows Forms core chat\\TCPChatClient.cs",
               "RelativeToolTip": "Windows Forms core chat\\TCPChatClient.cs",
-              "ViewState": "AgIAACsAAAAAAAAAAAAcwDsAAAANAAAAAAAAAA==",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAAA8AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-10-17T03:03:56.663Z",
               "IsPinned": true,
@@ -60,10 +60,11 @@
               "RelativeDocumentMoniker": "Windows Forms core chat\\ClientSocket.cs",
               "ToolTip": "C:\\Users\\aegan\\Documents\\NDS203 - Assesment 2\\C# Chat Application - Current\\C# Chat Application\\Windows Forms core chat\\ClientSocket.cs",
               "RelativeToolTip": "Windows Forms core chat\\ClientSocket.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAdAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAA1AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-10-17T02:28:27.759Z",
-              "IsPinned": true
+              "IsPinned": true,
+              "EditorCaption": ""
             }
           ]
         }
