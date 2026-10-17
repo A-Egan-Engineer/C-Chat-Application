@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 using System.Diagnostics.Eventing.Reader;
 using System.Threading.Tasks;
+using System.Linq;
 
 //https://github.com/AbleOpus/NetworkingSamples/blob/master/MultiServer/Program.cs
 namespace Windows_Forms_Chat
@@ -157,12 +158,6 @@ namespace Windows_Forms_Chat
                     return; // Exit the method to prevent further processing
                 }
             }
-            if (text.ToLower() == "!commands") // Client requested time
-            {
-                byte[] data = Encoding.ASCII.GetBytes("Commands are !commands !about !who !whisper !exit");
-                currentClientSocket.socket.Send(data);
-                AddToChat("Commands sent to: " + currentClientSocket.username);
-            }
             if (currentClientSocket.username != null)
             {
                 if (text.StartsWith("!user") && !text.StartsWith("!username"))
@@ -198,6 +193,19 @@ namespace Windows_Forms_Chat
                     SendToAll($"User {oldUsername} changed their username to {newUsername}", currentClientSocket); // Push the username change notification to all clients - Andrew
                 }
             }
+            if (text.ToLower() == "!commands") // Client requested time
+            {
+                byte[] data = Encoding.ASCII.GetBytes("Commands are !commands !about !who !whisper !exit");
+                currentClientSocket.socket.Send(data);
+                AddToChat("Commands sent to: " + currentClientSocket.username);
+            }
+            if (text.ToLower() == "!who") // Client requested time
+            {
+                clientSockets.OrderBy(c => c.username).ToList(); // Sort the list of connected users alphabetically - Andrew
+                byte[] data = Encoding.ASCII.GetBytes("Connected users: " + string.Join(", ", clientSockets.ConvertAll(c => c.username)));
+                currentClientSocket.socket.Send(data);
+                AddToChat("Connected users sent to: " + currentClientSocket.username);
+            }
             if (text.ToLower() == "!exit") // Client wants to exit gracefully
             {
                 // Always Shutdown before closing
@@ -214,7 +222,7 @@ namespace Windows_Forms_Chat
                 {
                     AddToChat("User " + oldUsername + " updated username to: " + currentClientSocket.username);
                 }
-                else if (!text.StartsWith("!username") && !text.StartsWith("!user"))
+                else if (!text.StartsWith("!username") && !text.StartsWith("!user") && !text.StartsWith("!commands") && !text.StartsWith("!who") && !text.StartsWith("!exit"))
                 {
                     SendToAll(currentClientSocket.username + ": " + text, currentClientSocket);
                 }
