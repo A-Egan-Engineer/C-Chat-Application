@@ -49,8 +49,6 @@ namespace Windows_Forms_Chat
             chatTextBox.Text += "Server setup complete\n\n";
         }
 
-
-
         public void CloseAllSockets()
         {
             foreach (ClientSocket clientSocket in clientSockets)
@@ -92,7 +90,7 @@ namespace Windows_Forms_Chat
         {
             ClientSocket currentClientSocket = (ClientSocket)AR.AsyncState;
 
-            currentClientSocket.state = true; // Set the state to true to indicate that the client is active - Andrew
+            currentClientSocket.connectionState = true; // Set the connection state to true to indicate that the client is active - Andrew
 
             int received;
 
@@ -115,7 +113,7 @@ namespace Windows_Forms_Chat
 
             if (currentClientSocket.username == null) // Check if username is not set and command is !username - Andrew
             {
-                if (text.StartsWith("!username")) // Check if the command is !username - Andrew
+                if (text.ToLower().StartsWith("!username")) // Check if the command is !username - Andrew
                 {
                     string newUsername = text.Substring(9).Trim(); // Extract the username from the command - Andrew
 
@@ -145,6 +143,7 @@ namespace Windows_Forms_Chat
                         }
                     }
                     currentClientSocket.username = newUsername; // Set the username - Andrew
+                    AddToChat($"User {newUsername} has joined the chat!"); // Log the new user joining the chat - Andrew
                     byte[] welcomeData = Encoding.ASCII.GetBytes($"Welcome, {newUsername}!"); // Create a welcome message for the currentClientSocket - Andrew
                     currentClientSocket.socket.Send(welcomeData); // Send a welcome message to the currentClientSocket - Andrew
 
@@ -160,7 +159,7 @@ namespace Windows_Forms_Chat
             }
             if (currentClientSocket.username != null)
             {
-                if (text.StartsWith("!user") && !text.StartsWith("!username"))
+                if (text.ToLower().StartsWith("!user") && !text.ToLower().StartsWith("!username"))
                 {
                     string newUsername = text.Substring(6).Trim(); // Extract the new username from the command - Andrew
                     if (string.IsNullOrWhiteSpace(newUsername)) // Check if the new username is empty or whitespace - Andrew
@@ -189,24 +188,25 @@ namespace Windows_Forms_Chat
                     }
                     oldUsername = currentClientSocket.username; // Store the old username for notification purposes - Andrew
                     currentClientSocket.username = newUsername; // Set the new username to currentClientSocket - Andrew
+                    AddToChat($"User {oldUsername} changed their username to: {newUsername}"); // Log the username change in the chat - Andrew
                     byte[] usernameChangedData = Encoding.ASCII.GetBytes($"Username updated to {newUsername}"); // Create a message to notify all clients of the username change - Andrew
                     SendToAll($"User {oldUsername} changed their username to {newUsername}", currentClientSocket); // Push the username change notification to all clients - Andrew
                 }
             }
-            if (text.ToLower() == "!commands") // Client requested time
+            if (text.ToLower().StartsWith("!commands")) // Client requested time
             {
                 byte[] data = Encoding.ASCII.GetBytes("Commands are !commands !about !who !whisper !exit");
                 currentClientSocket.socket.Send(data);
                 AddToChat("Commands sent to: " + currentClientSocket.username);
             }
-            if (text.ToLower() == "!who") // Client requested time
+            if (text.ToLower().StartsWith("!who")) // Client requested time
             {
                 clientSockets.OrderBy(c => c.username).ToList(); // Sort the list of connected users alphabetically - Andrew
                 byte[] data = Encoding.ASCII.GetBytes("Connected users: " + string.Join(", ", clientSockets.ConvertAll(c => c.username)));
                 currentClientSocket.socket.Send(data);
                 AddToChat("Connected users sent to: " + currentClientSocket.username);
             }
-            if (text.ToLower() == "!about") // Client requested time
+            if (text.ToLower().StartsWith("!about")) // Client requested time
             {
                 byte[] data = Encoding.ASCII.GetBytes("Server: This is a simple chat server MVP that was provided by Torrens University Australia for NDS203 Networking and Databases. It allows multiple clients to connect and chat with each other via TCP/IP. It was co-developed by Andrew Egan in October of 2026");
                 currentClientSocket.socket.Send(data);
@@ -242,7 +242,7 @@ namespace Windows_Forms_Chat
                     }
                 }
             }
-            if (text.StartsWith("!reply")) // Client requested to reply to the last whisper
+            if (text.ToLower().StartsWith("!reply")) // Client requested to reply to the last whisper
             {
                 string[] parts = text.Split(' ', 2); // Split the command into parts
                 if (parts.Length < 2)
@@ -279,15 +279,7 @@ namespace Windows_Forms_Chat
             }
             else
             {
-                if (text.StartsWith("!username"))
-                {
-                    AddToChat("Client updated username to: " + currentClientSocket.username);
-                }
-                if (text.StartsWith("!user"))
-                {
-                    AddToChat("User " + oldUsername + " updated username to: " + currentClientSocket.username);
-                }
-                else if (!text.StartsWith("!username") && !text.StartsWith("!user") && !text.StartsWith("!commands") && !text.StartsWith("!who") && !text.StartsWith("!about") && !text.StartsWith("!whisper") && !text.StartsWith("!reply") && !text.StartsWith("!exit"))
+                if (!text.StartsWith("!"))
                 {
                     SendToAll(currentClientSocket.username + ": " + text, currentClientSocket);
                 }
@@ -317,7 +309,7 @@ namespace Windows_Forms_Chat
                 client.socket.Shutdown(SocketShutdown.Both);
                 client.socket.Close();
                 clientSockets.Remove(client);
-                client.state = false;
+                client.connectionState = false;
                 AddToChat("Client disconnected");
             }
         }

@@ -12,8 +12,8 @@ namespace Windows_Forms_Chat
         public const int BUFFER_SIZE = 2048;
         public byte[] buffer = new byte[BUFFER_SIZE];
         public string username; // Username of the client - Andrew
-        public bool state; // True = connected, False = disconnected - Andrew
+        public bool connectionState; // True = connected, False = disconnected - Andrew
         public string lastWhisperedUsername; // Username of the last user that this client whispered to - Andrew
-        
+        public bool isModerator; // True = moderator, False = not a moderator - Andrew
     }
 }
