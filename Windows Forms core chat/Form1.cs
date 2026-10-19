@@ -91,7 +91,7 @@ namespace Windows_Forms_Chat
             if (client != null)
                 client.SendString(TypeTextBox.Text);
             else if (server != null)
-                server.SendToAll(TypeTextBox.Text, null);
+                server.AddToChat(TypeTextBox.Text);
 
             // Added line to clear the textbox, once message is sent (UX Improvement) - Andrew 
             TypeTextBox.Text = "";

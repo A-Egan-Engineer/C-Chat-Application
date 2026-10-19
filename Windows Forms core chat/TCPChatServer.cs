@@ -49,6 +49,27 @@ namespace Windows_Forms_Chat
             chatTextBox.Text += "Server setup complete\n\n";
         }
 
+        public void AddModerator(ClientSocket client)
+        {
+            string text = Encoding.ASCII.GetString(client.buffer);
+            ClientSocket currentClientSocket = client;
+
+            if (serverSocket != null && client != null)
+            {
+                if (text.ToLower().StartsWith("!mod"))
+                {
+                    string targetUsername = text.Substring(4).Trim();
+                    if (targetUsername == client.username)
+                    {
+                        client.isModerator = true;
+                        AddToChat($"{client.username}" + " is now a server moderator.");
+                        byte[] data = Encoding.ASCII.GetBytes("You have been promoted to server moderator.");
+                        currentClientSocket.socket.Send(data);
+                    }
+                }
+            }
+        }
+
         public void CloseAllSockets()
         {
             foreach (ClientSocket clientSocket in clientSockets)
