@@ -10,6 +10,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Diagnostics.Eventing.Reader;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Reflection.Metadata;
 
 //https://github.com/AbleOpus/NetworkingSamples/blob/master/MultiServer/Program.cs
 namespace Windows_Forms_Chat
@@ -49,27 +50,6 @@ namespace Windows_Forms_Chat
             chatTextBox.Text += "Server setup complete\n\n";
         }
 
-        public void AddModerator(ClientSocket client)
-        {
-            string text = Encoding.ASCII.GetString(client.buffer);
-            ClientSocket currentClientSocket = client;
-
-            if (serverSocket != null && client != null)
-            {
-                if (text.ToLower().StartsWith("!mod"))
-                {
-                    string targetUsername = text.Substring(4).Trim();
-                    if (targetUsername == client.username)
-                    {
-                        client.isModerator = true;
-                        AddToChat($"{client.username}" + " is now a server moderator.");
-                        byte[] data = Encoding.ASCII.GetBytes("You have been promoted to server moderator.");
-                        currentClientSocket.socket.Send(data);
-                    }
-                }
-            }
-        }
-
         public void CloseAllSockets()
         {
             foreach (ClientSocket clientSocket in clientSockets)
@@ -104,6 +84,72 @@ namespace Windows_Forms_Chat
 
             //we finished this accept thread, better kick off another so more people can join
             serverSocket.BeginAccept(AcceptCallback, null);
+        }
+
+        public void HostChatHandler(string input)
+        {
+            ClientSocket targetClient;
+
+            if (input.ToLower().StartsWith("!mod"))
+            {
+                string targetUser = input.Substring(4).Trim();
+
+                if (string.IsNullOrWhiteSpace(targetUser))
+                {
+                    AddToChat("Please enter a valid username to promote using !mod <username>");
+                    return;
+                }
+                targetClient = FindClientByUsername(targetUser);
+                if (targetClient == null)
+                {
+                    AddToChat("User not found for promotion");
+                    return;
+                }
+                targetClient.isModerator = true;
+                byte[] data = Encoding.ASCII.GetBytes("You have been promoted to moderator");
+                targetClient.socket.Send(data);
+                AddToChat($"{targetClient.username} has been promoted to moderator");
+            }
+            if (input.ToLower().StartsWith("!unmod"))
+            {
+                string targetUser = input.Substring(6).Trim();
+
+                if (string.IsNullOrWhiteSpace(targetUser))
+                {
+                    AddToChat("Please enter a valid username to demote user, using !unmod <username>");
+                    return;
+                }
+                targetClient = FindClientByUsername(targetUser);
+                if (targetClient == null)
+                {
+                    AddToChat("No user found for demotion");
+                    return;
+                }
+                targetClient.isModerator = false;
+                byte[] data = Encoding.ASCII.GetBytes("You have been demoted from moderator to user");
+                targetClient.socket.Send(data);
+                AddToChat($"{targetClient.username} has been demoted to user");
+            }
+            else
+            {
+                if (!input.StartsWith("!"))
+                {
+                    SendToAll("Host: " + input, null);
+                    AddToChat("Host: " + input);
+                }
+            }    
+        }
+
+        private ClientSocket FindClientByUsername(string username)
+        {
+            foreach (ClientSocket c in clientSockets)
+            {
+                if (c.username != null && c.username.Equals(username, StringComparison.OrdinalIgnoreCase))
+                {
+                    return c;
+                }    
+            }
+            return null;
         }
 
         /* Callback function for handling received data from clients */
@@ -274,23 +320,12 @@ namespace Windows_Forms_Chat
                 }
                 else
                 {
-                    string message = parts[1];
-                    ClientSocket lastWhisperedClient = clientSockets.Find(c => c.username.Equals(currentClientSocket.lastWhisperedUsername, StringComparison.OrdinalIgnoreCase));
-                    if (lastWhisperedClient != null)
-                    {
-                        byte[] data = Encoding.ASCII.GetBytes($"Reply from {currentClientSocket.username}: {message}");
-                        lastWhisperedClient.socket.Send(data);
-                        data = Encoding.ASCII.GetBytes($"Reply to {lastWhisperedClient.username}: {message}");
-                        currentClientSocket.socket.Send(data);
-                        AddToChat($"Reply from {currentClientSocket.username} to {lastWhisperedClient.username}: {message}");
-                    }
-                    else
-                    {
-                        byte[] data = Encoding.ASCII.GetBytes($"No user to reply to, reply failed.");
-                        currentClientSocket.socket.Send(data);
-                        AddToChat($"Reply failed: No user to reply to for {currentClientSocket.username}");
-                    }
+                    
                 }
+            }
+            if (currentClientSocket.isModerator == true && text.ToLower().StartsWith("!kick"))
+            {
+
             }
             if (text.ToLower() == "!exit") // Client wants to exit gracefully
             {

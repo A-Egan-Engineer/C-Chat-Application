@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Windows Forms core chat")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3e2d37cd0d54eefc075b432e95f556da37b1d5d1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+78b3dc71259d214a94b4073f41c61db91d5e188d")]
 [assembly: System.Reflection.AssemblyProductAttribute("Windows Forms core chat")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Windows Forms core chat")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
