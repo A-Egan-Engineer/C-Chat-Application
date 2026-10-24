@@ -296,14 +296,15 @@ namespace Windows_Forms_Chat
                 {
                     string targetUsername = parts[1]; // The username to whisper to
                     string message = parts[2]; // The message to send
-                    ClientSocket targetClient = clientSockets.Find(c => c.username.Equals(targetUsername, StringComparison.OrdinalIgnoreCase));
+                    ClientSocket targetClient = FindClientByUsername(targetUsername);
                     if (targetClient != null)
                     {
                         byte[] data = Encoding.ASCII.GetBytes($"Whisper from {currentClientSocket.username}: {message}");
                         targetClient.socket.Send(data);
-                        data = Encoding.ASCII.GetBytes($"Whisper to {targetUsername}: {message}");
+                        data = Encoding.ASCII.GetBytes($"Whisper to {targetClient.username}: {message}");
                         currentClientSocket.socket.Send(data);
-                        AddToChat($"Whisper from {currentClientSocket.username} to {targetUsername}: {message}");
+                        AddToChat($"Whisper from {currentClientSocket.username} to {targetClient.username}: {message}");
+                        targetClient.userToReply = currentClientSocket;
                     }
                     else
                     {
@@ -313,19 +314,34 @@ namespace Windows_Forms_Chat
                     }
                 }
             }
-            if (text.ToLower().StartsWith("!reply")) // Client requested to reply to the last whisper
+            if (text.ToLower().StartsWith("!reply"))
             {
-                string[] parts = text.Split(' ', 2); // Split the command into parts
+                string message = text.Substring(6).Trim();
+                ClientSocket replyTarget = currentClientSocket.userToReply;
 
-                if (parts.Length < 2)
+                if (string.IsNullOrWhiteSpace(message))
                 {
-                    byte[] data = Encoding.ASCII.GetBytes("Usage: !reply <message>");
+                    byte[] data = Encoding.ASCII.GetBytes($"Please type a message to reply, !reply <message>");
                     currentClientSocket.socket.Send(data);
-                    AddToChat("Reply command usage sent to: " + currentClientSocket.username);
+                }
+                else if (replyTarget == null)
+                {
+                    byte[] data = Encoding.ASCII.GetBytes($"No user available to reply too");
+                    currentClientSocket.socket.Send(data);
+                }
+                else if (!clientSockets.Contains(replyTarget))
+                {
+                    byte[] data = Encoding.ASCII.GetBytes($"User you are trying to reply to is offline");
+                    currentClientSocket.socket.Send(data);
+                    currentClientSocket.userToReply = null;
                 }
                 else
                 {
-                    
+                    byte[] data = Encoding.ASCII.GetBytes($"Reply from {currentClientSocket.username} : {message}");
+                    replyTarget.socket.Send(data);
+                    data = Encoding.ASCII.GetBytes($"Reply to {replyTarget.username} : {message}");
+                    currentClientSocket.socket.Send(data);
+                    replyTarget.userToReply = currentClientSocket;
                 }
             }
             if (text.ToLower().StartsWith("!kick"))
