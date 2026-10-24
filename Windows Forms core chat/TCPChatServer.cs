@@ -173,6 +173,10 @@ namespace Windows_Forms_Chat
                 clientSockets.Remove(currentClientSocket);
                 return;
             }
+            catch(ObjectDisposedException)
+            {
+                return;
+            }
 
             byte[] recBuf = new byte[received];
             Array.Copy(currentClientSocket.buffer, recBuf, received);
@@ -312,6 +316,7 @@ namespace Windows_Forms_Chat
             if (text.ToLower().StartsWith("!reply")) // Client requested to reply to the last whisper
             {
                 string[] parts = text.Split(' ', 2); // Split the command into parts
+
                 if (parts.Length < 2)
                 {
                     byte[] data = Encoding.ASCII.GetBytes("Usage: !reply <message>");
@@ -323,9 +328,43 @@ namespace Windows_Forms_Chat
                     
                 }
             }
-            if (currentClientSocket.isModerator == true && text.ToLower().StartsWith("!kick"))
+            if (text.ToLower().StartsWith("!kick"))
             {
+                ClientSocket targetClient;
 
+                string targetUser = text.Substring(5).Trim();
+
+                targetClient = FindClientByUsername(targetUser);
+
+                if (currentClientSocket.isModerator == true)
+                {
+                    if (string.IsNullOrWhiteSpace(targetUser))
+                    {
+                        byte[] data = Encoding.ASCII.GetBytes($"Username variable empty, please enter a valid username to kick");
+                        currentClientSocket.socket.Send(data);
+                        currentClientSocket.socket.BeginReceive(currentClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, currentClientSocket);
+                        return;
+                    }
+                    if (targetClient == null)
+                    {
+                        byte[] data = Encoding.ASCII.GetBytes("No user found, please try again");
+                        currentClientSocket.socket.Send(data);
+                    }
+                    else
+                    {
+                        targetClient.socket.Shutdown(SocketShutdown.Both);
+                        targetClient.socket.Close();
+                        clientSockets.Remove(targetClient);
+                        targetClient.connectionState = false;
+                        SendToAll($"{targetUser.ToLower()} has been kicked from the server", currentClientSocket);
+                        AddToChat($"{targetUser.ToLower()} was kicked from the server by {currentClientSocket.username}");
+                    }
+                }
+                else if (currentClientSocket.isModerator == false)
+                {
+                    byte[] data = Encoding.ASCII.GetBytes($"You don't have the required permissions to kick users");
+                    currentClientSocket.socket.Send(data);
+                }
             }
             if (text.ToLower() == "!exit") // Client wants to exit gracefully
             {
