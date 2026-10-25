@@ -88,47 +88,41 @@ namespace Windows_Forms_Chat
 
         public void HostChatHandler(string input)
         {
-            ClientSocket targetClient;
-
             if (input.ToLower().StartsWith("!mod"))
             {
+
+                ClientSocket targetClient;
+
                 string targetUser = input.Substring(4).Trim();
+                targetClient = FindClientByUsername(targetUser);
 
                 if (string.IsNullOrWhiteSpace(targetUser))
                 {
-                    AddToChat("Please enter a valid username to promote using !mod <username>");
+                    AddToChat("Username cannot be empty, please enter a valid username (!mod <username>)");
                     return;
                 }
-                targetClient = FindClientByUsername(targetUser);
-                if (targetClient == null)
+                if (targetClient == null && targetUser.Length > 0)
                 {
-                    AddToChat("User not found for promotion");
+                    AddToChat("User is not connected or found, please try again!");
                     return;
                 }
-                targetClient.isModerator = true;
-                byte[] data = Encoding.ASCII.GetBytes("You have been promoted to moderator");
-                targetClient.socket.Send(data);
-                AddToChat($"{targetClient.username} has been promoted to moderator");
-            }
-            if (input.ToLower().StartsWith("!unmod"))
-            {
-                string targetUser = input.Substring(6).Trim();
-
-                if (string.IsNullOrWhiteSpace(targetUser))
+                else
                 {
-                    AddToChat("Please enter a valid username to demote user, using !unmod <username>");
-                    return;
+                    if (targetClient.isModerator == false)
+                    {
+                        targetClient.isModerator = true;
+                        byte[] data = Encoding.ASCII.GetBytes("You have been promoted to moderator");
+                        targetClient.socket.Send(data);
+                        AddToChat($"{targetClient.username} has been promoted to moderator");
+                    }
+                    else
+                    {
+                        targetClient.isModerator = false;
+                        byte[] data = Encoding.ASCII.GetBytes("You have been demoted from moderator to user");
+                        targetClient.socket.Send(data);
+                        AddToChat($"{targetClient.username} has been demoted from moderator to user");
+                    }
                 }
-                targetClient = FindClientByUsername(targetUser);
-                if (targetClient == null)
-                {
-                    AddToChat("No user found for demotion");
-                    return;
-                }
-                targetClient.isModerator = false;
-                byte[] data = Encoding.ASCII.GetBytes("You have been demoted from moderator to user");
-                targetClient.socket.Send(data);
-                AddToChat($"{targetClient.username} has been demoted to user");
             }
             else
             {
