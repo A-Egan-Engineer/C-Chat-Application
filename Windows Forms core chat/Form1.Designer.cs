@@ -119,7 +119,8 @@
             this.TypeTextBox.Name = "TypeTextBox";
             this.TypeTextBox.Size = new System.Drawing.Size(448, 27);
             this.TypeTextBox.TabIndex = 7;
-            this.TypeTextBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TypeTextBox_KeyDown); // Added TextBox KeyDown event handler for Enter (UX Improvement) - Andrew
+            // Added TextBox KeyDown event handler for Enter (UX Improvement) - Andrew
+            this.TypeTextBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TypeTextBox_KeyDown); 
             // 
             // label4
             // 

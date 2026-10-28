@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Net.Sockets;
-using System.Text;
+﻿using System.Net.Sockets;
 
 namespace Windows_Forms_Chat
 {
@@ -10,10 +6,14 @@ namespace Windows_Forms_Chat
     {
         public Socket socket;
         public const int BUFFER_SIZE = 2048;
-        public byte[] buffer = new byte[BUFFER_SIZE];
-        public string username; // Username of the client - Andrew
-        public ClientSocket userToReply; // Username of the last user that this client whispered to - Andrew
-        public bool connectionState = false; // True = connected, False = disconnected - Andrew
-        public bool isModerator = false; // True = moderator, False = not a moderator - Andrew
+        public byte[] buffer = new byte[BUFFER_SIZE]; 
+        // Username of the client - Andrew
+        public string username;
+        // Username of the last user that this client whispered to - Andrew
+        public ClientSocket userToReply;
+        // True = connected, False = disconnected - Andrew
+        public bool connectionState = false;
+        // True = moderator, False = not a moderator - Andrew
+        public bool isModerator = false; 
     }
 }

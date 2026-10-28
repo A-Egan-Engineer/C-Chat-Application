@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Windows.Forms;
 
 namespace Windows_Forms_Chat
@@ -20,7 +18,6 @@ namespace Windows_Forms_Chat
         }
         public void AddToChat(string str)
         {
-            //dumb https://iandotnet.wordpress.com/tag/multithreading-how-to-update-textbox-on-gui-from-another-thread/
             chatTextBox.Invoke((Action)delegate
             {
                 chatTextBox.AppendText(str);

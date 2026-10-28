@@ -13,7 +13,6 @@ namespace Windows_Forms_Chat
     {
 
         public Socket serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        //connected clients
         public List<ClientSocket> clientSockets = new List<ClientSocket>();
         public bool usernameUsed = false;
         public string oldUsername = null;
@@ -21,7 +20,6 @@ namespace Windows_Forms_Chat
         public static TCPChatServer createInstance(int port, TextBox chatTextBox)
         {
             TCPChatServer tcp = null;
-            //setup if port within range and valid chat box given
             if (port > 0 && port < 65535 && chatTextBox != null)
             {
                 tcp = new TCPChatServer();
@@ -29,8 +27,6 @@ namespace Windows_Forms_Chat
                 tcp.chatTextBox = chatTextBox;
 
             }
-
-            //return empty if user not enter useful details
             return tcp;
         }
 
@@ -39,7 +35,6 @@ namespace Windows_Forms_Chat
             chatTextBox.Text += "Setting up server...\n\n";
             serverSocket.Bind(new IPEndPoint(IPAddress.Any, port));
             serverSocket.Listen(0);
-            //kick off thread to read connecting clients, when one connects, it'll call out AcceptCallback function
             serverSocket.BeginAccept(AcceptCallback, this);
             chatTextBox.Text += "Server setup complete\n\n";
         }
@@ -79,7 +74,12 @@ namespace Windows_Forms_Chat
             
             serverSocket.BeginAccept(AcceptCallback, null);
         }
-
+        /// <summary>
+        /// 28th of October 2026 - Andrew
+        /// Chat handling for host. Handles command inputs and logic with nested 
+        /// if/else statements. Satisfies Step Five of the Assessment 2 brief, covering
+        /// !mod to trigger moderator status on client sockets.
+        /// </summary>
         public void HostChatHandler(string input)
         {
             if (input.ToLower().StartsWith("!mod"))
@@ -127,7 +127,12 @@ namespace Windows_Forms_Chat
                 }
             }    
         }
-
+        /// <summary>
+        /// 28th of October 2026 - Andrew
+        /// Follows good reusable code practices by creating a user search,
+        /// utlised to find client sockets by their username based on the 
+        /// paramete input. Ignores case-sensitivity.
+        /// </summary>
         private ClientSocket FindClientByUsername(string username)
         {
             foreach (ClientSocket c in clientSockets)
@@ -140,7 +145,19 @@ namespace Windows_Forms_Chat
             return null;
         }
 
-        
+        /// <summary>
+        /// 28th of October 2026 - Andrew
+        /// Rearms the client sockets to ensure they continue listening for further inputs.
+        /// The buffer is where incoming data gets written and buffer size handles the byte cap
+        /// for the data. The socket flag indicates the type of packet to be sent i.e. broadcast,
+        /// multicast or other behaviours for data transmission.
+        /// </summary>
+        public async void RearmCallback (IAsyncResult AR)
+        {
+            ClientSocket currentClientSocket = (ClientSocket)AR.AsyncState;
+            currentClientSocket.socket.BeginReceive(currentClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, currentClientSocket);
+        }
+
         public async void ReceiveCallback(IAsyncResult AR)
         {
             ClientSocket currentClientSocket = (ClientSocket)AR.AsyncState;
@@ -170,6 +187,15 @@ namespace Windows_Forms_Chat
             Array.Copy(currentClientSocket.buffer, recBuf, received);
             string text = Encoding.ASCII.GetString(recBuf);
 
+            /// <summary>
+            /// 28th of October 2026 - Andrew
+            /// !username mod that satifies Step One of the brief
+            /// Allows users to assign there own username when joining
+            /// the server for the first time. Handles null check, 
+            /// compares input to exsisting users to avoid duplicate usernames,
+            /// If checks pass, assign username. Otherwise, if username unassigned
+            /// and user attempt to chat, prompt to set username.
+            /// </summary>
             if (currentClientSocket.username == null) 
             {
                 if (text.ToLower().StartsWith("!username")) 
@@ -181,7 +207,7 @@ namespace Windows_Forms_Chat
                         byte[] data = Encoding.ASCII.GetBytes("Username cannot be empty. Please choose a valid username.");
                         currentClientSocket.socket.Send(data);
                         AddToChat("Client attempted to set an empty username");
-                        currentClientSocket.socket.BeginReceive(currentClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, currentClientSocket);
+                        RearmCallback(AR);
                         return; 
                     }
 
@@ -212,10 +238,17 @@ namespace Windows_Forms_Chat
                     byte[] data = Encoding.ASCII.GetBytes("Please set your username using !username <your_username>");
                     currentClientSocket.socket.Send(data);
                     AddToChat("Client attempted to send message without setting username");
-                    currentClientSocket.socket.BeginReceive(currentClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, currentClientSocket);
+                    RearmCallback(AR);
                     return; 
                 }
             }
+            /// <summary>
+            /// 28th of October 2026 - Andrew
+            /// Null check on client socket username. If username is assigned 
+            /// check (if duplicate, disconnect session). Otherwise, oldusername
+            /// is stored for broadcast to all clients, that user has updated 
+            /// their username. 
+            /// </summary>
             if (currentClientSocket.username != null)
             {
                 if (text.ToLower().StartsWith("!user") && !text.ToLower().StartsWith("!username"))
@@ -226,7 +259,7 @@ namespace Windows_Forms_Chat
                         byte[] data = Encoding.ASCII.GetBytes("Username cannot be empty. Please choose a valid username.");
                         currentClientSocket.socket.Send(data);
                         AddToChat("Client attempted to set an empty username");
-                        currentClientSocket.socket.BeginReceive(currentClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, currentClientSocket);
+                        RearmCallback(AR);
                         return; 
                     }
                     foreach (ClientSocket c in clientSockets)
@@ -252,12 +285,21 @@ namespace Windows_Forms_Chat
                     SendToAll($"User {oldUsername} changed their username to {newUsername}", currentClientSocket); 
                 }
             }
+            /// <summary>
+            /// 28th of October 2026 - Andrew
+            /// Displays available commands for use to client
+            /// </summary>
             if (text.ToLower().StartsWith("!commands")) 
             {
                 byte[] data = Encoding.ASCII.GetBytes("Commands are !commands !about !who !whisper !exit");
                 currentClientSocket.socket.Send(data);
                 AddToChat("Commands sent to: " + currentClientSocket.username);
             }
+            /// <summary>
+            /// 28th of October 2026 - Andrew
+            /// Sorts client sockets in list by alpabetical order and
+            /// sends client the list of connected user clients. 
+            /// </summary>
             if (text.ToLower().StartsWith("!who")) 
             {
                 clientSockets.OrderBy(c => c.username).ToList(); 
@@ -265,12 +307,24 @@ namespace Windows_Forms_Chat
                 currentClientSocket.socket.Send(data);
                 AddToChat("Connected users sent to: " + currentClientSocket.username);
             }
+            /// <summary>
+            /// 28th of October 2026 - Andrew
+            /// Send the client information about the creator, purpose and year
+            /// of development.
+            /// </summary>
             if (text.ToLower().StartsWith("!about")) 
             {
                 byte[] data = Encoding.ASCII.GetBytes("Server: This is a simple chat server MVP that was provided by Torrens University Australia for NDS203 Networking and Databases. It allows multiple clients to connect and chat with each other via TCP/IP. It was co-developed by Andrew Egan in October of 2026");
                 currentClientSocket.socket.Send(data);
                 AddToChat("About information sent to: " + currentClientSocket.username);
             }
+            /// <summary>
+            /// 28th of October 2026 - Andrew
+            /// Whisper command that clients use to send private messages 
+            /// to the target user. This data only transmits to the targetClient
+            /// socket. Data is encoded before being sent. Satisfies Step Four of
+            /// the assessment, along with !who, !about, and !reply.
+            /// </summary>
             if (text.ToLower().StartsWith("!whisper"))
             {
                 string[] parts = text.Split(' ', 3);
@@ -302,6 +356,16 @@ namespace Windows_Forms_Chat
                     }
                 }
             }
+            /// <summary>
+            /// 28th of October 2026 - Andrew
+            /// Custom command to satisfy the final component of Step Four.
+            /// The client receives a whisper and the client who sent the 
+            /// message is stored is replyTarget. The user can then reply
+            /// with their own private whisper back, using !reply command.
+            /// There is no need for the replying client to list the target
+            /// user in the chat, as it updates the target user based on 
+            /// the last whisperer.
+            /// </summary>
             if (text.ToLower().StartsWith("!reply"))
             {
                 string message = text.Substring(6).Trim();
@@ -332,6 +396,12 @@ namespace Windows_Forms_Chat
                     replyTarget.userToReply = currentClientSocket;
                 }
             }
+            /// <summary>
+            /// 28th of October 2026 - Andrew
+            /// Satisfies the !kick command require for Step Five in the brief.
+            /// Only clients with moderator status can access this command, which
+            /// can only be assigned by the server using !mod <username>.
+            /// </summary>
             if (text.ToLower().StartsWith("!kick"))
             {
                 ClientSocket targetClient;
@@ -346,7 +416,7 @@ namespace Windows_Forms_Chat
                     {
                         byte[] data = Encoding.ASCII.GetBytes($"Username variable empty, please enter a valid username to kick");
                         currentClientSocket.socket.Send(data);
-                        currentClientSocket.socket.BeginReceive(currentClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, currentClientSocket);
+                        RearmCallback(AR);
                         return;
                     }
                     if (targetClient == null)
@@ -382,7 +452,7 @@ namespace Windows_Forms_Chat
                     SendToAll(currentClientSocket.username + ": " + text, currentClientSocket);
                 }
             }
-            currentClientSocket.socket.BeginReceive(currentClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, currentClientSocket);
+            RearmCallback(AR);
         }
 
         public void SendToAll(string str, ClientSocket from)
@@ -397,6 +467,13 @@ namespace Windows_Forms_Chat
             }
         }
 
+        /// <summary>
+        /// 28th of October 2026 - Andrew
+        /// DisconnectClient handles the disconnect message, delays 5 
+        /// seconds before the user timesout and the clients socket is 
+        /// shutdown and removed from the instance. Connection status
+        /// updates to false (disconnected).
+        /// </summary>
         public async Task DisconnectClient(ClientSocket client)
         {
             if (client != null)
