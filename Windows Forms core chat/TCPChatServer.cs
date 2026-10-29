@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Windows.Forms;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Diagnostics.Eventing.Reader;
 
 namespace Windows_Forms_Chat
 {
@@ -82,7 +83,7 @@ namespace Windows_Forms_Chat
         /// </summary>
         public void HostChatHandler(string input)
         {
-            if (input.ToLower().StartsWith("!mod"))
+            if (input.ToLower().StartsWith("!mod") && !input.ToLower().StartsWith("!mods"))
             {
 
                 ClientSocket targetClient;
@@ -115,6 +116,18 @@ namespace Windows_Forms_Chat
                         byte[] data = Encoding.ASCII.GetBytes("You have been demoted from moderator to user");
                         targetClient.socket.Send(data);
                         AddToChat($"{targetClient.username} has been demoted from moderator to user");
+                    }
+                }
+            }
+            if (input.ToLower().StartsWith("!mods"))
+            {
+                AddToChat("Current Sever Moderators:\n");
+
+                foreach (ClientSocket c in clientSockets)
+                {
+                    if (c.username != null && c.isModerator == true)
+                    {
+                        AddToChat($"{c.username}");
                     }
                 }
             }
