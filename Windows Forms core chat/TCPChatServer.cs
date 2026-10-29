@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Diagnostics.Eventing.Reader;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Windows.Forms;
+using System.Text;
 using System.Threading.Tasks;
-using System.Linq;
-using System.Diagnostics.Eventing.Reader;
+using System.Windows.Forms;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Windows_Forms_Chat
 {
@@ -79,7 +80,8 @@ namespace Windows_Forms_Chat
         /// 28th of October 2026 - Andrew
         /// Chat handling for host. Handles command inputs and logic with nested 
         /// if/else statements. Satisfies Step Five of the Assessment 2 brief, covering
-        /// !mod to trigger moderator status on client sockets.
+        /// !mod to trigger moderator status on client sockets and listing active mods
+        /// with !mods command.
         /// </summary>
         public void HostChatHandler(string input)
         {
@@ -302,7 +304,7 @@ namespace Windows_Forms_Chat
             /// 28th of October 2026 - Andrew
             /// Displays available commands for use to client
             /// </summary>
-            if (text.ToLower().StartsWith("!commands")) 
+            if (text.ToLower().StartsWith("!commands") || text.ToLower().StartsWith("!c"))
             {
                 byte[] data = Encoding.ASCII.GetBytes("Commands are !commands !about !who !whisper !exit");
                 currentClientSocket.socket.Send(data);
@@ -313,7 +315,7 @@ namespace Windows_Forms_Chat
             /// Sorts client sockets in list by alpabetical order and
             /// sends client the list of connected user clients. 
             /// </summary>
-            if (text.ToLower().StartsWith("!who")) 
+            if (text.ToLower().StartsWith("!who") || text.ToLower().StartsWith("!w")) 
             {
                 clientSockets.OrderBy(c => c.username).ToList(); 
                 byte[] data = Encoding.ASCII.GetBytes("Connected users: " + string.Join(", ", clientSockets.ConvertAll(c => c.username)));
@@ -325,7 +327,7 @@ namespace Windows_Forms_Chat
             /// Send the client information about the creator, purpose and year
             /// of development.
             /// </summary>
-            if (text.ToLower().StartsWith("!about")) 
+            if (text.ToLower().StartsWith("!about") || text.ToLower().StartsWith("!a")) 
             {
                 byte[] data = Encoding.ASCII.GetBytes("Server: This is a simple chat server MVP that was provided by Torrens University Australia for NDS203 Networking and Databases. It allows multiple clients to connect and chat with each other via TCP/IP. It was co-developed by Andrew Egan in October of 2026");
                 currentClientSocket.socket.Send(data);
@@ -338,7 +340,7 @@ namespace Windows_Forms_Chat
             /// socket. Data is encoded before being sent. Satisfies Step Four of
             /// the assessment, along with !who, !about, and !reply.
             /// </summary>
-            if (text.ToLower().StartsWith("!whisper"))
+            if (text.ToLower().StartsWith("!whisper") || text.ToLower().StartsWith("!w"))
             {
                 string[] parts = text.Split(' ', 3);
                 if (parts.Length < 3)
@@ -379,7 +381,7 @@ namespace Windows_Forms_Chat
             /// user in the chat, as it updates the target user based on 
             /// the last whisperer.
             /// </summary>
-            if (text.ToLower().StartsWith("!reply"))
+            if (text.ToLower().StartsWith("!reply") || text.ToLower().StartsWith("!r"))
             {
                 string message = text.Substring(6).Trim();
                 ClientSocket replyTarget = currentClientSocket.userToReply;
@@ -415,7 +417,7 @@ namespace Windows_Forms_Chat
             /// Only clients with moderator status can access this command, which
             /// can only be assigned by the server using !mod <username>.
             /// </summary>
-            if (text.ToLower().StartsWith("!kick"))
+            if (text.ToLower().StartsWith("!kick") || text.ToLower().StartsWith("!k"))
             {
                 ClientSocket targetClient;
 
@@ -453,7 +455,7 @@ namespace Windows_Forms_Chat
                     currentClientSocket.socket.Send(data);
                 }
             }
-            if (text.ToLower() == "!exit")
+            if (text.ToLower() == "!exit" || text.ToLower() == "!e")
             {
                 await DisconnectClient(currentClientSocket);
                 return;
