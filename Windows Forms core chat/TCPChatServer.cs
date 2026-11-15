@@ -7,7 +7,6 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Windows_Forms_Chat
 {
@@ -306,7 +305,7 @@ namespace Windows_Forms_Chat
             /// </summary>
             if (text.ToLower().StartsWith("!commands") || text.ToLower().StartsWith("!c"))
             {
-                byte[] data = Encoding.ASCII.GetBytes("Commands are !commands !about !who !whisper !exit");
+                byte[] data = Encoding.ASCII.GetBytes("Commands are !commands/!c (Shows available commands) \n !about/!a (Shows server information) \n !who (Lists connected users) \n !whisper/w (Sends a private message) \n !reply/!r (Replies to the last private message) \n !exit (Disconnects from the server)");
                 currentClientSocket.socket.Send(data);
                 AddToChat("Commands sent to: " + currentClientSocket.username);
             }
@@ -315,7 +314,7 @@ namespace Windows_Forms_Chat
             /// Sorts client sockets in list by alpabetical order and
             /// sends client the list of connected user clients. 
             /// </summary>
-            if (text.ToLower().StartsWith("!who") || text.ToLower().StartsWith("!w")) 
+            if (text.ToLower().StartsWith("!who")) 
             {
                 clientSockets.OrderBy(c => c.username).ToList(); 
                 byte[] data = Encoding.ASCII.GetBytes("Connected users: " + string.Join(", ", clientSockets.ConvertAll(c => c.username)));
@@ -340,7 +339,7 @@ namespace Windows_Forms_Chat
             /// socket. Data is encoded before being sent. Satisfies Step Four of
             /// the assessment, along with !who, !about, and !reply.
             /// </summary>
-            if (text.ToLower().StartsWith("!whisper") || text.ToLower().StartsWith("!w"))
+            if (text.ToLower().StartsWith("!whisper") || text.ToLower().StartsWith("!w") && !text.ToLower().StartsWith("!who"))
             {
                 string[] parts = text.Split(' ', 3);
                 if (parts.Length < 3)

@@ -1,37 +1,12 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\Users\\aegan\\Documents\\NDS203 - Assesment 2\\C# Chat Application - Current\\C# Chat Application\\",
-  "Documents": [
-    {
-      "AbsoluteMoniker": "D:0:0:{B8333D53-CBB6-444E-9CE3-19E9F7B85716}|Windows Forms core chat\\Windows Forms core chat.csproj|c:\\users\\aegan\\documents\\nds203 - assesment 2\\c# chat application - current\\c# chat application\\windows forms core chat\\tcpchatserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{B8333D53-CBB6-444E-9CE3-19E9F7B85716}|Windows Forms core chat\\Windows Forms core chat.csproj|solutionrelative:windows forms core chat\\tcpchatserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    }
-  ],
+  "Documents": [],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
       "VerticalTabListWidth": 256,
-      "DocumentGroups": [
-        {
-          "DockedWidth": 200,
-          "SelectedChildIndex": 0,
-          "Children": [
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "TCPChatServer.cs",
-              "DocumentMoniker": "C:\\Users\\aegan\\Documents\\NDS203 - Assesment 2\\C# Chat Application - Current\\C# Chat Application\\Windows Forms core chat\\TCPChatServer.cs",
-              "RelativeDocumentMoniker": "Windows Forms core chat\\TCPChatServer.cs",
-              "ToolTip": "C:\\Users\\aegan\\Documents\\NDS203 - Assesment 2\\C# Chat Application - Current\\C# Chat Application\\Windows Forms core chat\\TCPChatServer.cs",
-              "RelativeToolTip": "Windows Forms core chat\\TCPChatServer.cs",
-              "ViewState": "AgIAAFAAAAAAAAAAAAAAwGcAAAAbAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-29T08:36:49.865Z",
-              "EditorCaption": ""
-            }
-          ]
-        }
-      ]
+      "DocumentGroups": []
     }
   ]
 }
